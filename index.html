@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Quiz: How Tanssi Are You?</title>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <style>
+    body {
+      font-family: 'Poppins', sans-serif;
+      background: radial-gradient(circle, #1a202c 0%, #0c0a18 100%);
+      color: #E2E8F0;
+    }
+    .font-orbitron { font-family: 'Orbitron', sans-serif; }
+    .text-tanssi-cyan { color: #25C4F2; }
+    .glow { text-shadow: 0 0 10px #25C4F2; }
+    .quiz-container {
+      background: rgba(22, 27, 34, 0.7);
+      backdrop-filter: blur(10px);
+      border: 1px solid #30363D;
+      box-shadow: 0 0 30px rgba(37, 196, 242, 0.2);
+    }
+    .modal-overlay {
+      background: rgba(13, 17, 23, 0.9);
+      backdrop-filter: blur(5px);
+    }
+    .answer-btn {
+      background-color: #30363D;
+      border: 1px solid #4A5568;
+      transition: all 0.2s ease-in-out;
+    }
+    .answer-btn:hover:not([disabled]) {
+      background-color: #4A5568;
+      border-color: #25C4F2;
+    }
+    .answer-btn.correct { background-color: #238636; border-color: #2ea043; }
+    .answer-btn.wrong { background-color: #DA3633; border-color: #f85149; }
+    #timer-bar-inner { transition: width 0.5s linear; }
+    .share-card {
+      background: linear-gradient(135deg, #164e63, #3b0764);
+      border: 2px solid #25C4F2;
+    }
+  </style>
+</head>
+<body class="flex items-center justify-center min-h-screen p-4">
+
+  <!-- Game UI -->
+  <div id="game-container" class="quiz-container rounded-2xl p-8 w-full max-w-2xl text-center hidden">
+    <div class="flex justify-between items-center mb-4">
+      <p>Question <span id="question-counter">1</span>/<span id="total-questions">14</span></p>
+      <p class="font-orbitron text-xl">Score: <span id="score">0</span></p>
+    </div>
+    <div class="w-full bg-gray-700 rounded-full h-4 mb-6 border border-gray-500">
+      <div id="timer-bar-inner" class="bg-gradient-to-r from-cyan-400 to-blue-500 h-full rounded-full"></div>
+    </div>
+    <div class="mb-6 flex justify-center">
+      <img id="clue-image" src="images/default.png" alt="Clue Image" style="width: 250px; height: 250px;" class="rounded-full border-4 border-tanssi-cyan">
+    </div>
+    <h2 id="question-text" class="text-xl mb-6">Whose X/Twitter account is this?</h2>
+    <div id="answer-buttons" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
+  </div>
+
+  <!-- Modal -->
+  <div id="modal" class="fixed inset-0 flex items-center justify-center modal-overlay">
+    <div id="start-modal-content" class="quiz-container rounded-2xl p-10 text-center max-w-xl">
+        <h1 class="font-orbitron text-4xl text-tanssi-cyan glow mb-4 flex items-center justify-center gap-3">
+          How 
+          <img src="images/Tanssi Logo & Icon -05.png" alt="Tanssi Logo" class="h-16 inline-block align-middle" />
+          Are You?
+        </h1>
+      
+        <p class="text-lg mb-8">
+          Test your knowledge about the Tanssi team and ecosystem. Answer each question within 15 seconds!
+        </p>
+      
+        <button id="start-button" class="font-orbitron bg-cyan-500 text-black px-8 py-3 rounded-lg text-xl hover:bg-cyan-400 transition-transform hover:scale-105">
+          Start Quiz!
+        </button>
+      </div>
+      
+
+    <div id="end-modal-content" class="quiz-container rounded-2xl p-8 text-center max-w-lg hidden">
+      <h1 class="font-orbitron text-3xl text-tanssi-cyan glow mb-4">Quiz Complete!</h1>
+      <div id="share-card" class="share-card rounded-lg p-6 mb-6 text-white">
+        <p class="font-bold">I just completed the quiz</p>
+        <img src="images/Tanssi Logo & Icon -05.png" alt="Tanssi Logo" class="h-12 inline-block align-middle" />
+        <p class="font-orbitron text-2xl text-tanssi-cyan glow mb-2 flex items-center justify-center gap-2">
+            "How Tanssi Are You?"
+          </p>
+        <p class="text-lg">and my score is:</p>
+        <p id="final-score" class="font-orbitron text-7xl font-black my-4">100</p>
+        <p class="text-sm font-bold">#Tanssi #Appchain</p>
+      </div>
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+        <button id="share-button" class="bg-black text-white p-3 rounded-lg font-bold hover:bg-gray-800">Share to X</button>
+        <button id="download-button" class="bg-blue-600 text-white p-3 rounded-lg font-bold hover:bg-blue-700">Download Result Image</button>
+      </div>
+      <button id="restart-button" class="w-full bg-gray-600 text-white p-3 rounded-lg font-bold hover:bg-gray-700">Play Again</button>
+    </div>
+  </div>
+
+  <script>
+    const allHandles = ['@wirexapp', '@TanssiNetwork', '@Leo1925_', '@turriztA', '@TrnGian12759322', '@dabeibleibn', '@sopke86', '@katherineqb', '@thiagorudiger', '@fjagosti', '@symbioticfi', '@Moondancelabs', '@TanssiFdn', '@ethereum', '@Polkadot'];
+    const quizData = [
+      { answer: '@fjagosti', imageFile: 'agosti.jpg' },
+      { answer: '@katherineqb', imageFile: 'katy.jpg' },
+      { answer: '@thiagorudiger', imageFile: 'thiago.jpg' },
+      { answer: '@Moondancelabs', imageFile: 'moondance.jpg' },
+      { answer: '@TanssiFdn', imageFile: 'fdn.jpg' },
+      { answer: '@symbioticfi', imageFile: 'symbitoc.png' },
+      { answer: '@Polkadot', imageFile: 'polkadot.jpg' },
+      { answer: '@ethereum', imageFile: 'eth.jpg' },
+      { answer: '@Leo1925_', imageFile: 'leo.jpg' },
+      { answer: '@TanssiNetwork', imageFile: 'tanssi.jpg' },
+      { answer: '@dabeibleibn', imageFile: 'nikki.jpg' },
+      { answer: '@TrnGian12759322', imageFile: 'john.jpg' },
+      { answer: '@sopke86', imageFile: 'stefan.jpg' },
+      { answer: '@wirexapp', imageFile: 'wirex.jpg' },
+      { answer: '@turriztA', imageFile: 'turizt.jpg' }
+    ];
+
+    const gameContainer = document.getElementById('game-container');
+    const modal = document.getElementById('modal');
+    const startModalContent = document.getElementById('start-modal-content');
+    const endModalContent = document.getElementById('end-modal-content');
+    const startButton = document.getElementById('start-button');
+    const restartButton = document.getElementById('restart-button');
+    const shareButton = document.getElementById('share-button');
+    const downloadButton = document.getElementById('download-button');
+    const questionCounterEl = document.getElementById('question-counter');
+    const totalQuestionsEl = document.getElementById('total-questions');
+    const scoreEl = document.getElementById('score');
+    const finalScoreEl = document.getElementById('final-score');
+    const clueImageEl = document.getElementById('clue-image');
+    const answerButtonsEl = document.getElementById('answer-buttons');
+    const timerBarInnerEl = document.getElementById('timer-bar-inner');
+
+    const TIME_LIMIT = 15;
+    let shuffledQuestions, currentQuestionIndex, score, timer, timeLeft;
+    const SCORE_PER_CORRECT = 100 / quizData.length;
+
+    function shuffleArray(array) { return array.sort(() => Math.random() - 0.5); }
+
+    function getOptions(correctAnswer) {
+      const options = [correctAnswer];
+      const wrongAnswers = shuffleArray(allHandles.filter(h => h !== correctAnswer));
+      for (let i = 0; i < 3; i++) options.push(wrongAnswers[i]);
+      return shuffleArray(options);
+    }
+
+    function startGame() {
+      shuffledQuestions = shuffleArray(quizData);
+      currentQuestionIndex = 0;
+      score = 0;
+      modal.classList.add('hidden');
+      startModalContent.classList.add('hidden');
+      endModalContent.classList.add('hidden');
+      gameContainer.classList.remove('hidden');
+      totalQuestionsEl.textContent = shuffledQuestions.length;
+      scoreEl.textContent = Math.round(score);
+      setNextQuestion();
+    }
+
+    function setNextQuestion() {
+      resetState();
+      showQuestion(shuffledQuestions[currentQuestionIndex]);
+      startTimer();
+    }
+
+    function showQuestion(question) {
+      questionCounterEl.textContent = currentQuestionIndex + 1;
+      clueImageEl.src = `imagess/${question.imageFile}`;
+      const options = getOptions(question.answer);
+      options.forEach(option => {
+        const button = document.createElement('button');
+        button.innerText = option;
+        button.classList.add('answer-btn', 'p-4', 'rounded-lg', 'text-lg');
+        button.addEventListener('click', selectAnswer);
+        answerButtonsEl.appendChild(button);
+      });
+    }
+
+    function startTimer() {
+      clearInterval(timer);
+      timeLeft = TIME_LIMIT;
+      updateTimerUI();
+      timer = setInterval(() => {
+        timeLeft--;
+        updateTimerUI();
+        if (timeLeft <= 0) timeUp();
+      }, 1000);
+    }
+
+    function updateTimerUI() {
+      const percentage = (timeLeft / TIME_LIMIT) * 100;
+      timerBarInnerEl.style.width = `${percentage}%`;
+    }
+
+    function timeUp() {
+      clearInterval(timer);
+      showCorrectAnswer();
+      moveToNextQuestionWithDelay();
+    }
+
+    function resetState() {
+      clearInterval(timer);
+      while (answerButtonsEl.firstChild) {
+        answerButtonsEl.removeChild(answerButtonsEl.firstChild);
+      }
+    }
+
+    function showCorrectAnswer() {
+      Array.from(answerButtonsEl.children).forEach(button => {
+        if (button.innerText === shuffledQuestions[currentQuestionIndex].answer) {
+          button.classList.add('correct');
+        }
+        button.disabled = true;
+      });
+    }
+
+    function selectAnswer(e) {
+      clearInterval(timer);
+      const selectedButton = e.target;
+      const correct = selectedButton.innerText === shuffledQuestions[currentQuestionIndex].answer;
+      if (correct) {
+        score += SCORE_PER_CORRECT;
+        scoreEl.textContent = Math.round(score);
+        selectedButton.classList.add('correct');
+      } else {
+        selectedButton.classList.add('wrong');
+      }
+      showCorrectAnswer();
+      moveToNextQuestionWithDelay();
+    }
+
+    function moveToNextQuestionWithDelay() {
+      setTimeout(() => {
+        currentQuestionIndex++;
+        if (currentQuestionIndex < shuffledQuestions.length) {
+          setNextQuestion();
+        } else {
+          endGame();
+        }
+      }, 2000);
+    }
+
+    function endGame() {
+      clearInterval(timer);
+      gameContainer.classList.add('hidden');
+      modal.classList.remove('hidden');
+      startModalContent.classList.add('hidden');
+      endModalContent.classList.remove('hidden');
+      finalScoreEl.textContent = Math.round(score);
+    }
+
+    function shareToX() {
+      const text = `I just scored ${Math.round(score)} in the "How Tanssi Are You?" quiz! Can you beat me?`;
+      const url = "https://tanssi.network";
+      const hashtags = "Tanssi,Appchain,HowTanssiAreYou";
+      const via = "TanssiFdn";
+      const twitterUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}&hashtags=${hashtags}&via=${via}`;
+      window.open(twitterUrl, '_blank');
+    }
+
+    function downloadResultImage() {
+      const card = document.getElementById('share-card');
+      html2canvas(card, {
+        backgroundColor: null,
+        scale: 2
+      }).then(canvas => {
+        const link = document.createElement('a');
+        link.download = 'tanssi-quiz-result.png';
+        link.href = canvas.toDataURL('image/png');
+        link.click();
+      });
+    }
+
+    startButton.addEventListener('click', startGame);
+    restartButton.addEventListener('click', startGame);
+    shareButton.addEventListener('click', shareToX);
+    downloadButton.addEventListener('click', downloadResultImage);
+  </script>
+</body>
+</html>
