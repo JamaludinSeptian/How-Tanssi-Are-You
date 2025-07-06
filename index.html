@@ -257,9 +257,9 @@
 
     function shareToX() {
       const text = `I just scored ${Math.round(score)} in the "How Tanssi Are You?" quiz! Can you beat me?`;
-      const url = "https://tanssi.network";
+      const url = "https://how-tanssi-are-you.vercel.app/";
       const hashtags = "Tanssi,Appchain,HowTanssiAreYou";
-      const via = "TanssiFdn";
+      const via = "TanssiNetwork"
       const twitterUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}&hashtags=${hashtags}&via=${via}`;
       window.open(twitterUrl, '_blank');
     }
